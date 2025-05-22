@@ -33,21 +33,17 @@ class DataIngestion:
         }
 
     @staticmethod
-    def generate_sql_path(script_name: str):
+    def generate_sql_path(script_name: str): # Returns the absolute path to the given SQL script. #
         actual_dir = os.path.dirname(os.path.abspath(__file__))
         sql_route = os.path.join(actual_dir, "..", "..", "sql", script_name)
         return os.path.normpath(sql_route)
     
-    def generate_externaldata_path(self):
+    def generate_externaldata_path(self): # Returns the absolute path to the external CSV file for the model. #
         actual_dir = os.path.dirname(os.path.abspath(__file__))
         csv_route = os.path.join(actual_dir, "..", "..", "data", f"{self.table_map[self.model_class]}.csv")
         return os.path.normpath(csv_route) 
 
-    def create_tables_from_sql_file(self):
-        '''
-            This method verify if the tables are created in the database. 
-            In case that the tables were not created before, it creates all the tables missing
-        '''
+    def create_tables_from_sql_file(self): # Executes the SQL script to create missing tables in the database. #
         path = self.generate_sql_path(script_name='create_tables.sql')
 
         if not os.path.exists(path):
@@ -68,7 +64,7 @@ class DataIngestion:
         conn.commit()
         print("All tables were successfully created")
     
-    def load_external_data(self):
+    def load_external_data(self): # Loads the external CSV file into a DataFrame. #
         try:
             csv_path = self.generate_externaldata_path()
             df = pd.read_csv(csv_path)
@@ -79,7 +75,7 @@ class DataIngestion:
         except Exception as e:
             raise ValueError(f"ERROR getting external data: {e}")
 
-    def upload_data(self):
+    def upload_data(self): # Validates and uploads new data to the database using LOAD DATA INFILE. #
         self.create_tables_from_sql_file()
         table_name = self.table_map[self.model_class]
         external_data = self.load_external_data()
