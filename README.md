@@ -52,5 +52,5 @@ La clase `DataIngestion` actualmente soporta los siguientes modelos:
 from models.Categories import Category
 from pipelines.DataIngestion import DataIngestion
 
-categories = DataIngestion(**MODEL)
-categories.upload_data()
+external_data = DataIngestion(Category) # Puede ser cualquier modelo aceptado
+external_dtaa.upload_data()
