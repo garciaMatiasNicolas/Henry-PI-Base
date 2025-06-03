@@ -1,7 +1,9 @@
-from pipelines.DataIngestion import DataIngestion
-import pandas as pd
-from models.Categories import Category
+from fastapi import FastAPI
+from .app.api import router
 
+app = FastAPI(
+    title="Proyecto Final Entregable Henry - Capacitacion Accenture",
+    version="1.0"
+)
 
-categories = DataIngestion(Category)
-categories.upload_data()
+app.include_router(router)
