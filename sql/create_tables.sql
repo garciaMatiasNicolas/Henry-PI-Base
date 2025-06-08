@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(10, 2) NOT NULL,
     category INT NOT NULL,  
     class_type VARCHAR(50),
-    modify_date DATE NOT NULL,
+    modify_date DATE,
     resistant VARCHAR(50),
     is_allergic BOOLEAN,
     vitality_days INT NOT NULL
@@ -63,6 +63,6 @@ CREATE TABLE IF NOT EXISTS sales (
     quantity INT NOT NULL,
     discount DECIMAL(5, 2) NOT NULL,
     total_price DECIMAL(10, 2) NOT NULL,
-    sales_date DATETIME NOT NULL,
+    sales_date VARCHAR(50) NOT NULL,
     transaction_number VARCHAR(50) NOT NULL
 );

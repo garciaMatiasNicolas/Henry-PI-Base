@@ -1,99 +1,51 @@
+from datetime import date
 import pandas as pd
-from ..database.DataBase__singleton import MySQLConnector 
 
 
 class Employee:
 
-    def __init__(self, data: pd.DataFrame, database: MySQLConnector):
-        self.data = data
-        self.expected_columns = [
-            "EmployeeID", "FirstName", "MiddleInitial", "LastName",
-            "BirthDate", "Gender", "CityID", "HireDate"
-        ]
-        self.db: MySQLConnector = database
-    
-    def _validate_duplicate_ids(self):
-        """
-        Internal method to check for duplicate EmployeeIDs within the incoming DataFrame.
-        Raises a ValueError if duplicates are found.
-        """
-        self.data["EmployeeID"] = pd.to_numeric(self.data["EmployeeID"], errors="coerce").astype("Int64")
-        duplicate_ids = self.data[self.data.duplicated(subset=['EmployeeID'], keep=False)]
+    def __init__(
+        self, 
+        employee_id: int, 
+        first_name: str, 
+        middle_initial: str,
+        last_name: str, 
+        birth_date: date, 
+        gender: str, 
+        city_id: int,
+        hire_date: date
+    ):
+        self.employee_id = employee_id
+        self.first_name = first_name
+        self.middle_initial = middle_initial
+        self.last_name = last_name
+        self.birth_date = birth_date
+        self.gender = gender
+        self.city_id = city_id
+        self.hire_date = hire_date
 
-        if not duplicate_ids.empty:
-            duplicate_category_ids = duplicate_ids['EmployeeID'].unique().tolist()
-            raise ValueError(f"ERROR: Duplicate EmployeeIDs found in the input data: {duplicate_category_ids}. Please ensure all EmployeeIDs are unique.")
-    
-    def _clean_data(self):
-        """
-        Internal method to clean and standardize various employee-related columns.
-        It processes names, middle initial, gender, and converts date/ID columns.
-        """
-        self.data["FirstName"] = (
-            self.data["FirstName"]
-            .astype(str)
-            .str.replace(r"[\r\n\t]", "", regex=True)
-            .str.strip()
-            .str.title()
+    @classmethod
+    def from_db_row(cls, row: tuple):
+        return cls(
+            employee_id=row[0],
+            first_name=row[1],
+            middle_initial=row[2],
+            last_name=row[3],
+            birth_date=row[4],
+            gender=row[5],
+            city_id=row[6],
+            hire_date=row[7]
         )
 
-        self.data["LastName"] = (
-            self.data["LastName"]
-            .astype(str)
-            .str.replace(r"[\r\n\t]", "", regex=True)
-            .str.strip()
-            .str.title()
+    @classmethod
+    def from_pandas_row(cls, row: pd.Series):
+        return cls(
+            employee_id=row["employee_id"],
+            first_name=row["first_name"],
+            middle_initial=row["middle_initial"],
+            last_name=row["last_name"],
+            birth_date=row["birth_date"],
+            gender=row["gender"],
+            city_id=row["city_id"],
+            hire_date=row["hire_date"]
         )
-
-        self.data["MiddleInitial"] = (
-            self.data["MiddleInitial"]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-            .replace(["", "NULL", "NONE", "NAN", "NA"], None)
-        )
-        self.data["MiddleInitial"] = self.data["MiddleInitial"].where(
-            self.data["MiddleInitial"].str.len() == 1, None
-        )
-
-        self.data["Gender"] = (
-            self.data["Gender"]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-        )
-        self.data["Gender"] = self.data["Gender"].where(
-            self.data["Gender"].isin(["M", "F"]), None
-        )
-
-        self.data["BirthDate"] = pd.to_datetime(self.data["BirthDate"], errors='coerce')
-        self.data["HireDate"] = pd.to_datetime(self.data["HireDate"], errors='coerce')
-        self.data["CityID"] = pd.to_numeric(self.data["CityID"], errors='coerce').astype('Int64')
-
-    def validate(self):
-        """
-        Validates and cleans the input DataFrame for employee data.
-        It checks columns, validates unique IDs, cleans various data fields,
-        removes rows with missing essential data, and renames columns for database insertion.
-        """
-        if list(self.data.columns) != self.expected_columns:
-            raise ValueError(f"ERROR: Employees DataFrame must have exactly these columns: {self.expected_columns}")
-
-        self._validate_duplicate_ids()
-        self._clean_data()
-
-        self.data.dropna(subset=["EmployeeID", "FirstName", "LastName", "BirthDate", "Gender", "CityID", "HireDate"], inplace=True)
-
-        self.data.rename(columns={
-            "EmployeeID": "employee_id",
-            "FirstName": "first_name",
-            "MiddleInitial": "middle_initial",
-            "LastName": "last_name",
-            "BirthDate": "birth_date",
-            "Gender": "gender",
-            "CityID": "city_id",
-            "HireDate": "hire_date"
-        }, inplace=True)
-
-        print("Employee validation passed.")
-        return self.data

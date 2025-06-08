@@ -1,4 +1,6 @@
 from datetime import datetime
+import pandas as pd
+
 
 class Sale:
 
@@ -23,3 +25,4 @@ class Sale:
         self.total_price = total_price
         self.sales_date = sales_date  
         self.transaction_number = transaction_number
+    

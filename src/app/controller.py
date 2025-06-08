@@ -23,7 +23,8 @@ class DataUploadController:
         "countries": Country,
         "products": Product,
         "employees": Employee,
-        "customers": Customer
+        "customers": Customer,
+        "sales": Sale
     }
 
     def __init__(self, db_connector: MySQLConnector):

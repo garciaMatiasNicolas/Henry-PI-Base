@@ -8,7 +8,8 @@ from ..models.Customers import Customer
 from ..models.Countries import Country
 from ..models.Employees import Employee
 from ..models.Products import Product
-from .DataloaderFactory import DataLoaderFactory
+from ..factory.DataLoaderFactory import DataLoaderFactory
+from ..factory.DataValidationFactory import DataValidationFactory
 from ..models.Sales import Sale
 from dotenv import load_dotenv
 load_dotenv()
@@ -24,7 +25,7 @@ class DataIngestion:
             Country: "countries",
             Employee: "employees",
             Product: "products",
-            #Sale: "sales"
+            Sale: "sales"
         }
         self.model_class: type = model_class
         self.loader_type: str = loader_type
@@ -53,31 +54,6 @@ class DataIngestion:
         actual_dir = os.path.dirname(os.path.abspath(__file__))
         csv_route = os.path.join(actual_dir, "..", "..", "data", f"{self.table_map[self.model_class]}.csv")
         return os.path.normpath(csv_route) 
-
-    def create_tables_from_sql_file(self) -> None: 
-        '''
-            This method creates all the tables in the database selected
-            if didnt exists any of them
-        '''
-        path = self.generate_sql_path(script_name='create_tables.sql')
-
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"SQL file not found: {path}")
-
-        with open(path, 'r', encoding='utf-8') as file:
-            sql_script = file.read()
-
-        statements = [stmt.strip() for stmt in sql_script.split(';') if stmt.strip()]
-
-        for statement in statements:
-            try:
-                self.db.cursor.execute(statement)
-            
-            except Exception as e:
-                print(f"Error al ejecutar la sentencia:\n{statement}\nError: {e}")
-
-        self.db.connection.commit()
-        print("All tables were successfully created")
     
     def load_external_data(self) -> pd.DataFrame:
         '''
@@ -94,16 +70,12 @@ class DataIngestion:
             This method upload the data to the correct model in the database
             with a previous validation that depends on every model
         '''
-        self.create_tables_from_sql_file()
+        self.db.create_tables_from_sql_file(path=self.generate_sql_path(script_name="create_tables.sql"))
         table_name = self.table_map[self.model_class]
         external_data = self.load_external_data()
 
-        model_instance = self.model_class(data=external_data, database=self.db)  
-        validated_data = model_instance.validate()        
-        
-        if validated_data.empty:
-            warnings.warn(f"WARNING: All categories provided already existed in the database. No data was uploaded.")
-            return
+        validation_class = DataValidationFactory.get_validation_class(model=self.table_map[self.model_class], data=external_data) 
+        validated_data = validation_class.validate(db=self.db)     
 
         file_path = os.path.join(os.getenv("LOAD_DATA_INFILE_DIR"), 'data.csv')
         os.makedirs(os.path.dirname(file_path), exist_ok=True)  

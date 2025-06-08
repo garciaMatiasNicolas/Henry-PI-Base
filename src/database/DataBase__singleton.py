@@ -60,13 +60,14 @@ class MySQLConnector:
     
         return pd.read_sql_query(query, self.engine)
     
-    def query_insert_delete_update(self, query: str):
+    def query_insert_delete_update_triggers_idxs(self, typeof: str, query: str):
         if self.cursor is None:
             raise Exception("Database not connected")
         
         try:
             self.cursor.execute(query)
             self.connection.commit()
+            print(f"{typeof} creado exitosamente")
         except Exception as e:
             self.connection.rollback()
             print(f"Error executing query: {e}")
@@ -93,6 +94,30 @@ class MySQLConnector:
         except Exception as e:
             self.connection.rollback()
             print(f"ERROR uploading data to table '{table}': {e}")
+    
+    def create_tables_from_sql_file(self, path: str) -> None: 
+        '''
+            This method creates all the tables in the database selected
+            if didnt exists any of them
+        '''
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"SQL file not found: {path}")
+
+        with open(path, 'r', encoding='utf-8') as file:
+            sql_script = file.read()
+
+        statements = [stmt.strip() for stmt in sql_script.split(';') if stmt.strip()]
+
+        for statement in statements:
+            try:
+                self.cursor.execute(statement)
+            
+            except Exception as e:
+                print(f"Error al ejecutar la sentencia:\n{statement}\nError: {e}")
+
+        self.connection.commit()
+        print("All tables were successfully created")
     
 
     
